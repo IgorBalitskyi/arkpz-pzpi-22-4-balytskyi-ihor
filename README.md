@@ -1,1 +1,3 @@
-# arkpz-pzpi-22-4-balytskyi-ihor
+# pzpi-22-4
+
+Balitskyi Igor Oleksandrovich
