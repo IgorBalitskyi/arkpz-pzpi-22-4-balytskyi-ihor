@@ -1,0 +1,351 @@
+Харківський університет радіоелектроніки 
+Факультет комп'ютерних наук 
+Кафедра програмної інженерії 
+ЗВІТ 
+до практичної роботи з дисципліни 
+"Аналіз та рефакторинг коду" 
+на тему: "Методи рефакторингу коду програмного забезпечення"
+Виконав ст. гр ПЗПІ-22-4 
+ Балицький Ігор Олександрович
+Перевірив 
+ст. викл. кафедри ПІ
+Сокорчук Ігор Петрович 
+
+
+
+
+Харків 2024
+
+1
+
+Назва теми: «Методи рефакторингу коду програмного забезпечення» 
+Балицький І.О. ПЗПІ-22-4
+05.01.2025
+
+
+2
+
+Вступ
+	Що таке рефакторинг?
+Рефакторинг — це процес покращення структури існуючого коду без зміни його зовнішньої поведінки чи функціональності.
+
+	Мета рефакторингу:
+
+- Збільшення читабельності та зрозумілості коду.
+- Зниження складності та покращення підтримки програмного забезпечення.
+- Забезпечення більш ефективної та гнучкої архітектури для майбутніх змін і масштабування.
+
+	Коли застосовувати рефакторинг?
+-Перед додаванням нової функціональності.
+-Під час виправлення помилок.
+-Для оптимізації продуктивності коду.
+
+
+3
+
+	Методи рефакторингу у Solidity
+	1. Replace Constructor with Factory Method (Замінити конструктор фабричним методом)
+	Опис
+Фабричні методи дозволяють створювати об'єкти без необхідності знати точний клас, який потрібно створити. У Solidity це корисно, коли є потреба в створенні контрактів із динамічними параметрами або управлінням створенням екземплярів контракту.
+
+
+4
+
+	Оригінальний код
+contract SimpleContract {
+    address public owner;
+
+    constructor(address _owner) {
+        owner = _owner;
+    }
+}
+
+
+
+5
+
+	Код після рефакторингу
+pragma solidity ^0.8.0;
+
+contract SimpleContract {
+    address public owner;
+
+    constructor(address _owner) {
+        owner = _owner;
+    }
+}
+
+contract Factory {
+    function createContract(address _owner) public returns (SimpleContract) {
+        return new SimpleContract(_owner);
+    }
+}
+
+
+
+6
+
+	Пояснення
+Фабричний метод у вигляді окремого контракту `Factory` дозволяє створювати екземпляри `SimpleContract`, забезпечуючи більшу гнучкість та можливість управління процесом створення контрактів.
+
+
+
+7
+
+	2. Replace Nested Conditional with Guard Clauses (Замінити вкладені умовні оператори захисними виразами)
+	Опис
+Захисні вирази зменшують вкладеність коду та покращують його читабельність, завершуючи виконання функції раніше, якщо умова не виконується.
+
+
+8
+
+
+	Оригінальний код:
+contract Example {
+    function process(uint value) public pure returns (string memory) {
+        if (value > 0) {
+            if (value < 100) {
+                return "Valid range";
+            } else {
+                return "Value too high";
+            }
+        } else {
+            return "Value too low";
+        }
+    }
+}
+
+
+
+9
+
+
+	Код після рефакторингу
+
+contract Example {
+    function process(uint value) public pure returns (string memory) {
+        if (value <= 0) return "Value too low";
+        if (value >= 100) return "Value too high";
+        return "Valid range";
+    }
+}
+
+
+	Пояснення
+Код став простішим для розуміння завдяки використанню захисних виразів, які швидко обробляють виключні випадки.
+
+
+
+10
+
+
+	3. Replace Conditional with Polymorphism (Замінити умовний оператор поліморфізмом)
+	Опис
+Поліморфізм усуває потребу у великій кількості умовних операторів, спрощуючи розширення функціоналу.
+
+	Оригінальний код
+contract Payment {
+    function processPayment(string memory method) public pure returns (string memory) {
+        if (keccak256(abi.encodePacked(method)) == keccak256("credit")) {
+            return "Credit payment processed";
+        } else if (keccak256(abi.encodePacked(method)) == keccak256("debit")) {
+            return "Debit payment processed";
+        } else {
+            return "Unknown payment method";
+        }
+    }
+}
+
+
+
+11
+
+
+	Код після рефакторингу
+
+abstract contract Payment {
+    function processPayment() public virtual pure returns (string memory);
+}
+
+contract CreditPayment is Payment {
+    function processPayment() public pure override returns (string memory) {
+        return "Credit payment processed";
+    }
+}
+
+contract DebitPayment is Payment {
+    function processPayment() public pure override returns (string memory) {
+        return "Debit payment processed";
+    }
+}
+
+	Кожен тип платежу тепер представлений окремим контрактом, що дозволяє легко додавати нові методи без змін у базовому коді.
+
+
+
+12
+
+
+	Покрокова демонстрація рефакторингу на основі прикладу студенту
+
+	Обрано методи:
+- Replace Constructor with Factory Method: для інкапсуляції логіки створення об'єктів та спрощення коду клієнта.
+- Replace Nested Conditional with Guard Clauses: для підвищення читабельності шляхом видалення вкладених умов.
+
+
+
+13
+
+
+Код до рефакторингу:
+
+// Вихідний код
+contract Token {
+    string public name;
+    uint public totalSupply;
+
+    constructor(string memory _name, uint _totalSupply) public {
+        if (keccak256(abi.encodePacked(_name)) == keccak256(abi.encodePacked("USDT"))) {
+            name = "Tether";
+        } else if (keccak256(abi.encodePacked(_name)) == keccak256(abi.encodePacked("ETH"))) {
+            name = "Ethereum";
+        } else {
+            name = _name;
+        }
+        totalSupply = _totalSupply;
+    }
+}
+
+
+14
+
+
+contract Payment {
+    function processPayment(address user, uint amount) public returns (string memory) {
+        if (user != address(0)) {
+            if (amount > 0) {
+                if (amount < 100) {
+                    return "Low Payment";
+                } else {
+                    return "Payment Successful";
+                }
+            } else {
+                return "Invalid Amount";
+            }
+        } else {
+            return "Invalid User";
+        }
+    }
+}
+
+
+15
+
+
+	Аналіз вихідного коду:
+1. Конструктор класу `Token` має складну логіку створення об'єкта на основі типу токена.
+2. Метод `processPayment` містить вкладені умовні конструкції, які ускладнюють читання та супроводження коду.
+
+Внесення змін:
+1. Replace Constructor with Factory Method:
+    - Виділено фабричний метод для створення об'єктів `Token`.
+    - Логіка перевірки типу токена переміщена в фабрику.
+
+2. Replace Nested Conditional with Guard Clauses:
+    - Умови в методі `processPayment` були спрощені шляхом використання guard clauses для виходу з методу раніше.
+
+
+16
+
+
+	Код після рефакторингу:
+
+// Рефакторинг
+contract Token {
+    string public name;
+    uint public totalSupply;
+
+    constructor(string memory _name, uint _totalSupply) public {
+        name = _name;
+        totalSupply = _totalSupply;
+    }
+}
+
+contract TokenFactory {
+    function createToken(string memory _name, uint _totalSupply) public pure returns (Token) {
+        if (keccak256(abi.encodePacked(_name)) == keccak256(abi.encodePacked("USDT"))) {
+            return new Token("Tether", _totalSupply);
+        } else if (keccak256(abi.encodePacked(_name)) == keccak256(abi.encodePacked("ETH"))) {
+            return new Token("Ethereum", _totalSupply);
+        } else {
+            return new Token(_name, _totalSupply);
+        }
+    }
+}
+
+
+
+17
+
+
+contract Payment {
+    function processPayment(address user, uint amount) public pure returns (string memory) {
+        if (user == address(0)) {
+            return "Invalid User";
+        }
+        if (amount <= 0) {
+            return "Invalid Amount";
+        }
+        if (amount < 100) {
+            return "Low Payment";
+        }
+        return "Payment Successful";
+    }
+}
+
+
+
+18
+
+
+	Інструменти для рефакторингу
+1. Remix IDE
+Спеціалізоване середовище для розробки смарт-контрактів на Solidity.
+Включає вбудовані інструменти для аналізу та рефакторингу коду, такі як підсвічування помилок і оптимізаційні підказки.
+
+2. Visual Studio Code
+Плагіни для Solidity, такі як Solidity Visual Developer або Hardhat, надають функції підсвічування синтаксису, статичного аналізу коду та інтеграції з тестувальними середовищами.
+
+3. Solhint
+
+Лінтер для Solidity, який перевіряє код на відповідність стандартам стилю та кращим практикам. Допомагає виявити потенційні помилки та області для рефакторингу.
+
+4. MythX
+Інструмент для статичного аналізу смарт-контрактів, що дозволяє знаходити вразливості та покращувати структуру коду.
+
+
+
+
+19
+
+
+	Висновок:
+Рефакторинг є ключовим етапом підтримки якісного коду. Завдяки використанню таких методів, як фабричні методи, поліморфізм та захисні вирази, код стає простішим для розуміння, тестування та розширення. Регулярне застосування рефакторингу забезпечує стабільність та ефективність програмного забезпечення.
+
+
+
+20
+
+
+	Список використаних джерел:
+1. Martin Fowler. Refactoring: Improving the Design of Existing Code.
+2. Офіційна документація Solidity.
+
+
+Додаток А
+Посилання на відеозапис - https://youtu.be/Gytol4eqosw
+
+
+
+Додаток Б
+Презентація
